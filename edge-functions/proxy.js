@@ -1,54 +1,26 @@
-export default async (req, context) => {
-  const upgradeHeader = req.headers.get("Upgrade");
-  
-  if (upgradeHeader !== "Websocket") {
-    return new Response("Expected WebSocket upgrade", { 
-      status: 426,
-      headers: {
-        "Upgrade": "Websocket"
-      }
-    });
-  }
+export default async (request, context) => {
+  const url = new URL(request.url);
+  const targetUrl = "https://thomas.culturavpn.site:444" + url.pathname + url.search;
 
-  // Backend WebSocket URL
-  const backendUrl = "wss://zz.sdbuild.me/wsvm";
-  
-  // Create WebSocket connection to backend
-  const [client, server] = Object.values(new WebSocketPair());
-  
-  server.accept();
-  
-  const backendSocket = new WebSocket(backendUrl);
-  
-  // Forward messages from client to backend
-  server.addEventListener("message", (event) => {
-    if (backendSocket.readyState === WebSocket.READY_STATE_OPEN) {
-      backendSocket.send(event.data);
-    }
+  const backendResponse = await fetch(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body
   });
-  
-  // Forward messages from backend to client
-  backendSocket.addEventListener("message", (event) => {
-    if (server.readyState === WebSocket.READY_STATE_OPEN) {
-      server.send(event.data);
-    }
-  });
-  
-  // Handle connection close
-  backendSocket.addEventListener("close", () => {
-    server.close();
-  });
-  
-  server.addEventListener("close", () => {
-    backendSocket.close();
-  });
-  
-  return new Response(null, {
-    status: 101,
-    webSocket: client,
+
+  // Clona todas las cabeceras originales
+  const headers = new Headers(backendResponse.headers);
+  // Sólo añade controles de caché
+  headers.set("Cache-Control", "no-store");
+  headers.set("Netlify-CDN-Cache-Control", "no-store");
+
+  // Devuelve la respuesta original + cabeceras extras
+  return new Response(await backendResponse.arrayBuffer(), {
+    status: backendResponse.status,
+    headers
   });
 };
 
 export const config = {
-  path: "/ray"
+  path: "/tunel*"
 };
