@@ -1,11 +1,11 @@
 export default async (req, context) => {
   const upgradeHeader = req.headers.get("Upgrade");
   
-  if (upgradeHeader !== "websocket") {
+  if (upgradeHeader !== "Websocket") {
     return new Response("Expected WebSocket upgrade", { 
       status: 426,
       headers: {
-        "Upgrade": "websocket"
+        "Upgrade": "Websocket"
       }
     });
   }
