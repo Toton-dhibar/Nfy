@@ -1,14 +1,17 @@
-export default async (req, context) => {
-  const upgrade = req.headers.get("upgrade") || "";
+export default {
+  async fetch(req, env, ctx) {
+    const upgrade = req.headers.get("Upgrade");
 
-  if (upgrade.toLowerCase() !== "websocket") {
-    return new Response("Upgrade Required", { status: 426 });
+    if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+      return new Response("Upgrade Required", { status: 426 });
+    }
+
+    const backendUrl = "wss://zz.sdbuild.me/wsvm";
+
+    return fetch(backendUrl, {
+      headers: req.headers
+    });
   }
-
-  // URL de tu backend real con V2Ray
-  const backendUrl = "wss://zz.sdbuild.me/wsvm";
-
-  return context.rewrite(backendUrl);
 };
 
 export const config = {
