@@ -1,6 +1,6 @@
 export default async (request, context) => {
   const url = new URL(request.url);
-  const targetUrl = "https://zz.sdbuild.me:443" + url.pathname + url.search;
+  const targetUrl = "https://zz.sdbuild.me:443";
 
   const backendResponse = await fetch(targetUrl, {
     method: request.method,
