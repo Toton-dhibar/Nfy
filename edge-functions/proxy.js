@@ -1,5 +1,5 @@
 export default async (req, context) => {
-  const upgrade = req.headers.get("upgrade") || "";
+  const upgrade = req.headers.get("Upgrade") || "";
 
   if (upgrade.toLowerCase() !== "websocket") {
     return new Response("Upgrade Required", { status: 426 });
