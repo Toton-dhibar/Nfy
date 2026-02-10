@@ -4,4 +4,4 @@
 
 [[edge-functions]]
   function = "proxy"
-  path = "/ray"
+  path = "/*"
