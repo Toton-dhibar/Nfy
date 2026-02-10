@@ -1,6 +1,6 @@
 export default async (request, context) => {
   const url = new URL(request.url);
-  const targetUrl = "https://thomas.culturavpn.site:444" + url.pathname + url.search;
+  const targetUrl = "https://zz sdupdates.news:443" + url.pathname + url.search;
 
   const backendResponse = await fetch(targetUrl, {
     method: request.method,
