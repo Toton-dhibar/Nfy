@@ -1,6 +1,6 @@
 export default async (request, context) => {
   const url = new URL(request.url);
-  const targetUrl = "https://zz.sdbuild.me:443/autovl" + url.pathname + url.search;
+  const targetUrl = "https://zz.sdbuild.me:443" + url.pathname + url.search;
 
   const backendResponse = await fetch(targetUrl, {
     method: request.method,
@@ -22,5 +22,5 @@ export default async (request, context) => {
 };
 
 export const config = {
-  path: "/tunel*"
+  path: "/autovl*"
 };
