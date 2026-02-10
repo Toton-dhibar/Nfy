@@ -1,1 +1,7 @@
+[build]
+  command = "echo No build step"
+  publish = "."
 
+[[edge_functions]]
+  function = "proxy"
+  path = "/ray"
