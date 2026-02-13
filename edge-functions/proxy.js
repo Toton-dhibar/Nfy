@@ -1,30 +1,30 @@
 export default async (req, context) => {
   try {
     const TARGET_HOST = 'zz.sdbuild.me';
-    const url = new URL(req.url);
-    
-    // Construct the absolute URL
-    const targetUrl = `https://${TARGET_HOST}${url.pathname}${url.search}`;
+    // HARDCODED PATH: We ignore the incoming URL path and force /autovl
+    const TARGET_PATH = '/autovl'; 
+    const targetUrl = `https://${TARGET_HOST}${TARGET_PATH}${new URL(req.url).search}`;
 
-    // 1. Create a clean set of headers
+    console.log(`Force Proxying to: ${targetUrl}`);
+
+    // Create a MINIMAL header set. 
+    // Sometimes passing too many original headers (like Cloudflare or Netlify IDs) 
+    // triggers security blocks on the target Nginx.
     const headers = new Headers();
-    
-    // 2. Manually copy only necessary headers from the original request
-    const headersToCopy = ['accept', 'accept-language', 'content-type', 'authorization', 'user-agent'];
-    headersToCopy.forEach(h => {
-      if (req.headers.has(h)) {
-        headers.set(h, req.headers.get(h));
-      }
-    });
-
-    // 3. FORCE the Host header to the target
-    // This is the most common reason for 404s in Nginx proxies
     headers.set('Host', TARGET_HOST);
+    headers.set('User-Agent', req.headers.get('user-agent') || 'Mozilla/5.0');
+    headers.set('Accept', '*/*');
+    headers.set('Connection', 'keep-alive');
+
+    // If there's a body (POST/PUT), we must forward Content-Type
+    if (req.headers.has('content-type')) {
+      headers.set('content-type', req.headers.get('content-type'));
+    }
 
     const options = {
       method: req.method,
-      headers,
-      redirect: 'manual',
+      headers: headers,
+      redirect: 'follow', // Change to follow to see if target is redirecting
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -33,11 +33,15 @@ export default async (req, context) => {
     }
 
     const response = await fetch(targetUrl, options);
-    
-    const responseHeaders = new Headers(response.headers);
-    responseHeaders.delete('content-encoding');
 
-    // Add CORS headers so your browser doesn't block the response
+    // Debugging: Log what the target server is actually telling us
+    console.log(`Target Status: ${response.status}`);
+    console.log(`Target Server Header: ${response.headers.get('server')}`);
+
+    const responseHeaders = new Headers(response.headers);
+    // Remove encoding to prevent browser 'compression' errors
+    responseHeaders.delete('content-encoding');
+    // Ensure CORS is open for your frontend
     responseHeaders.set('Access-Control-Allow-Origin', '*');
 
     return new Response(response.body, {
@@ -46,10 +50,13 @@ export default async (req, context) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 502 });
+    return new Response(JSON.stringify({ error: 'Proxy Failed', detail: err.message }), { 
+      status: 502,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };
 
 export const config = {
-  path: "/*"
+  path: "/autovl" // This ensures mynetlify.com/autovl triggers this function
 };
