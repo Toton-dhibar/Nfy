@@ -4,15 +4,15 @@
 
 # Edge Function mapping for xhttp proxy
 [[edge_functions]]
-  path = "/vless-xhttp"
+  path = "/autovl"
   function = "proxy"
 
 [[edge_functions]]
-  path = "/vless-xhttp/*"
+  path = "/autovl/*"
   function = "proxy"
 
 # Optional headers (cache control)
 [[headers]]
-  for = "/vless-xhttp/*"
+  for = "/autovl/*"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
