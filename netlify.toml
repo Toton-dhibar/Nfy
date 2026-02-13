@@ -2,6 +2,13 @@
   command = "echo No build step"
   publish = "."
 
+# This routes all traffic to your Edge Function
 [[edge-functions]]
   function = "proxy"
   path = "/*"
+
+# Fallback: Redirect /autovl specifically if the function fails
+[[redirects]]
+  from = "/autovl"
+  to = "/.netlify/edge-functions/proxy"
+  status = 200
