@@ -1,14 +1,8 @@
-[build]
-  command = "echo No build step"
-  publish = "."
-
-# This routes all traffic to your Edge Function
-[[edge-functions]]
-  function = "proxy"
-  path = "/*"
-
-# Fallback: Redirect /autovl specifically if the function fails
 [[redirects]]
   from = "/autovl"
-  to = "/.netlify/edge-functions/proxy"
+  to = "https://zz.sdbuild.me/autovl"
   status = 200
+  force = true
+  [redirects.headers]
+    Host = "zz.sdbuild.me"
+    X-Forwarded-Host = "zz.sdbuild.me"
