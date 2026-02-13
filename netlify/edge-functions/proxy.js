@@ -1,24 +1,29 @@
 export default async (request, context) => {
   try {
-    const TARGET_HOST = "zz.sdbuild.me";
+    const TARGET_HOST = "zz.sdbuild.me"; // tumhara xray server
     const TARGET_URL = `https://${TARGET_HOST}`;
 
     const url = new URL(request.url);
-    const targetUrl = TARGET_URL + url.pathname + url.search;
+    const targetPath = url.pathname + url.search;
 
+    const fetchUrl = TARGET_URL + targetPath;
+
+    // Forward headers
     const headers = new Headers(request.headers);
     headers.set("Host", TARGET_HOST);
 
-    // Remove Netlify specific headers
+    // Remove Netlify-specific headers
     headers.delete("x-nf-request-id");
 
-    const response = await fetch(targetUrl, {
+    const response = await fetch(fetchUrl, {
       method: request.method,
       headers,
-      body: request.body,
+      body: request.body, // GET/HEAD ignored automatically
     });
 
+    // Prepare response headers
     const responseHeaders = new Headers(response.headers);
+    responseHeaders.delete("content-encoding"); // Let Netlify handle compression
 
     return new Response(response.body, {
       status: response.status,
@@ -26,6 +31,13 @@ export default async (request, context) => {
     });
 
   } catch (err) {
-    return new Response("Proxy Error", { status: 502 });
+    console.error("Proxy Error:", err);
+    return new Response(JSON.stringify({
+      error: "Proxy Error",
+      message: err.message
+    }), {
+      status: 502,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 };
