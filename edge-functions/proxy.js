@@ -1,65 +1,38 @@
 export default async (req, context) => {
+  const TARGET_HOST = 'zz.sdbuild.me';
+  const url = new URL(req.url);
+
+  // Hardcode the path to /autovl to ensure it hits the right backend route
+  const targetUrl = `https://${TARGET_HOST}/autovl${url.search}`;
+
+  // Clone headers and force the Host to the backend domain
+  const headers = new Headers(req.headers);
+  headers.set("Host", TARGET_HOST);
+  headers.set("Origin", `https://${TARGET_HOST}`);
+  headers.set("Referer", `https://${TARGET_HOST}/`);
+
+  // Remove Netlify-specific headers that might confuse Nginx
+  headers.delete("x-nf-client-connection-ip");
+  headers.delete("x-forwarded-for");
+
   try {
-    const TARGET_HOST = 'zz.sdbuild.me';
-    const url = new URL(req.url);
-    
-    // Force the path to /autovl regardless of what comes in
-    const targetUrl = `https://${TARGET_HOST}/autovl${url.search}`;
-
-    // 1. Clone original headers but Filter out 'host' and 'cf/nf' headers
-    const newHeaders = new Headers();
-    for (const [key, value] of req.headers.entries()) {
-      if (!key.startsWith('x-nf') && !key.startsWith('x-real') && key !== 'host') {
-        newHeaders.set(key, value);
-      }
-    }
-
-    // 2. Critical: Set Host and Origin to match the target exactly
-    newHeaders.set('Host', TARGET_HOST);
-    newHeaders.set('Origin', `https://${TARGET_HOST}`);
-    newHeaders.set('Referer', `https://${TARGET_HOST}/`);
-    
-    // 3. Ensure connection is treated as a standard browser request
-    newHeaders.set('Connection', 'keep-alive');
-
-    const options = {
+    const response = await fetch(targetUrl, {
       method: req.method,
-      headers: newHeaders,
-      redirect: 'follow', // Follow internal redirects on the backend
-    };
+      headers: headers,
+      body: req.body,
+      redirect: "manual", // Let the browser handle any 301/302 from Nginx
+    });
 
-    // Handle Body for POST/PUT
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      options.body = req.body;
-      options.duplex = 'half';
-    }
-
-    const response = await fetch(targetUrl, options);
-
-    // 4. Build the response back to the user
-    const responseHeaders = new Headers(response.headers);
-    
-    // Clean headers that cause browser mismatches
-    responseHeaders.delete('content-encoding');
-    responseHeaders.delete('content-length'); 
-    
-    // Fix Set-Cookie: If the backend tries to set a cookie for zz.sdbuild.me, 
-    // we rewrite it for your netlify domain.
-    const setCookie = responseHeaders.get('set-cookie');
-    if (setCookie) {
-      responseHeaders.set('set-cookie', setCookie.replace(/domain=[^;]+/g, ''));
-    }
+    // Mirror the response but strip encoding to prevent 404/compression errors
+    const resHeaders = new Headers(response.headers);
+    resHeaders.delete("content-encoding");
+    resHeaders.set("Access-Control-Allow-Origin", "*");
 
     return new Response(response.body, {
       status: response.status,
-      headers: responseHeaders,
+      headers: resHeaders,
     });
-
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Proxy Error', msg: err.message }), { status: 502 });
+    return new Response(`Edge Proxy Error: ${err.message}`, { status: 502 });
   }
-};
-
-export const config = {
-  path: "/autovl"
 };
