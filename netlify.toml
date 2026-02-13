@@ -1,3 +1,18 @@
+[build]
+  publish = "public"
+  command = "npm run build" # Agar tumhare frontend build command hai, warna hata do
+
+# Edge Function mapping for xhttp proxy
 [[edge_functions]]
-  path = "/autovl/*"
+  path = "/vless-xhttp"
   function = "proxy"
+
+[[edge_functions]]
+  path = "/vless-xhttp/*"
+  function = "proxy"
+
+# Optional headers (cache control)
+[[headers]]
+  for = "/vless-xhttp/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
